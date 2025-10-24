@@ -43,6 +43,10 @@ if len(torre) == 2:
         coordenada_Torre_in = True
     else:
         print("coordenada invalida")
+        exit()
+else:
+    print("coordenada invalida")
+    exit()
 
 
 # trocando a coordenada correspodente à da torre que o usuario escolheu pelo simbolo '+'
@@ -57,6 +61,11 @@ print_da_matriz()
 
 
 n_inimigos = int(input("quantos inimigos você quer posicionar ? :"))
+# tabuleiro 8x8 são 64 peças , mas apenas 63 disponiveis para alocar inimigos
+# por que um desses espaços já está ocupado pela torre
+if n_inimigos > 63:
+    print("número de inimigos maior que espaços disponiveis(63 espaços disponiveis)")
+    exit()
 for numero in range(n_inimigos):
     posicao = input(f"qual a posicao do {numero+1} inimigo ? :")
     # validando a posicao do inimigo :
@@ -68,10 +77,16 @@ for numero in range(n_inimigos):
             if posicao == torre:
                 print(
                     f"dois corpos não ocupam o mesmo espaços , o inimigo não pode ficar no lugar da sua torre")
-            # caso for uma posicao valida vai ser reatribuido a coordenada especificada pelo simbolo '*'
             else:
-                posicao = "".join(posicao)
-                lista_de_inimigos.append(posicao)
+                if posicao not in lista_de_inimigos:
+                    # essa condicional vai servir para evitar que se coloque o mesmo inimigo duas vezes
+                    posicao = "".join(posicao)
+                    lista_de_inimigos.append(posicao)
+                else:
+                    print("oops,você já digitou esse inimigo")
+        else:
+            # posicao não está nas coordenadas disponíveis
+            print("coordenada não pertence à nenhuma das especificadas")
 
     else:
         # caso não for valida irá apenas ser avisado no console :
@@ -82,24 +97,53 @@ print_da_matriz()
 
 
 torre = list(torre)
-inimigos_na_linha = 0
-inimigos_na_coluna = 0
-for linha_idx in range(8):
-    # contadora guardando o número de inimigos na linha atual e na coluna_atual
-    for coluna_idx in range(8):
-        coordenada = matriz[linha_idx][coluna_idx]
-        if coordenada in lista_de_inimigos:
-            coordenada_parts = list(coordenada)
-            if coordenada_parts[0] == torre[0]:
-                # essa condicional vai garantir que a torre não coma duas peças da mesma linha
-                if inimigos_na_linha < 1:
-                    inimigos_na_linha += 1
-            if coordenada_parts[1] == torre[1]:
-                # essa condicional vai garantir que a torre não coma duas peças da mesma coluna
-                if inimigos_na_coluna < 1:
-                    inimigos_na_coluna += 1
+
+
+def contabilizando_pecas_comiveis(lista_de_inimigos):
+    inimigos_esq = []
+    inimigos_dir = []
+    inimigos_cima = []
+    inimigos_baixo = []
+    for linha_idx in range(8):
+        # contadora guardando o número de inimigos na linha atual e na coluna_atual
+        for coluna_idx in range(8):
+            coordenada = matriz[linha_idx][coluna_idx]
+            # não tem como a coordenada do inimigo ser igual à coordenada da torre por que já tratamos este erro lá emcima
+            if coordenada in lista_de_inimigos:
+                coordenada_parts = list(coordenada)
+                if coordenada_parts[0] == torre[0]:
+                    # mesma letra / mesma linha que a torre
+                    if coordenada_parts[1] < torre[1]:
+                        # então está a esquerda da torre , por que o seu número é menor que o número da torre
+                        if coordenada not in inimigos_esq:
+                            # assim só vai deixar ter um inimigo comivel à esquerda , não pulando peças
+                            inimigos_esq.append(coordenada)
+                    if coordenada_parts[1] > torre[1]:
+                        # então está a direita da torre , por que o seu número é maior que o número da torre
+                        if coordenada not in inimigos_dir:
+                            # assim só vai deixar ter um inimigo comivel à direita , não pulando peças
+                            inimigos_dir.append(coordenada)
+                if coordenada_parts[1] == torre[1]:
+                    # mesmo número / mesma coluna que a torre
+                    if coordenada_parts[0] < torre[0]:
+                        # se a letra for menor que a letra da torre então está acima da torre
+                        if coordenada not in inimigos_cima:
+                            # assim só pode ter um inimigo comivel acima da torre
+                            inimigos_cima.append(coordenada)
+                    if coordenada_parts[0] > torre[0]:
+                        # então está abaixo da torre , por que a sua letra é maior que a letra da torre
+                        if coordenada not in inimigos_baixo:
+                            # assim só pode ter um inimigo comivel abaixo da torre
+                            inimigos_baixo.append(coordenada)
+
+    inimigos_na_linha = len(inimigos_esq)+len(inimigos_dir)
+    inimigos_na_coluna = len(inimigos_cima) + len(inimigos_baixo)
+    return inimigos_na_linha, inimigos_na_coluna
+
+
+inimigos_na_linha, inimigos_na_coluna = contabilizando_pecas_comiveis(
+    lista_de_inimigos)
 inimigos_no_tabuleiro_list = [inimigos_na_linha, inimigos_na_coluna]
 inimigos_no_tabuleiro_num = sum(inimigos_no_tabuleiro_list)
-
 print(
     f"a torre posicionada na coordenada {torre} pode comer {inimigos_no_tabuleiro_num} peças")
